@@ -3,6 +3,7 @@ classdef ontology
     properties
         dependencyMatrix;
         structureLabels;
+        structureColors;
         recursiveStructure;
         directedDistanceMatrix;
         unDirectedDistanceMatrix;
