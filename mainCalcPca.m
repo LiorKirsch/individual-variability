@@ -1,7 +1,7 @@
 function mainCalcPca()
 
-% 
-% load('expressionRawDataWithOntology.mat', 'expressionDataSelected',  'humanOntology','selectedProbesData','locationMatrix');
+
+% load('expressionRawDataWithOntology.mat', 'expressionDataSelected',  'humanOntology','selectedProbesData','locationMatrix','structureData');
 % load('humanOntologyObject.mat');
 % load('subset.mat');
 % 
@@ -11,10 +11,10 @@ function mainCalcPca()
 % regionColors = humanOntology.structureColors(subsetNodesIndex,:);
 % regionNames = humanOntology.structureLabels(subsetNodesIndex,4);
 % 
-% [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, experimentRegion] = calcPCAinStructures(expressionDataSelected, locationMatrix, humanOntology,subsetNodesIndex);
+% [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, experimentRegion, mni_xyz, mri_voxel_xyz] = calcPCAinStructures(expressionDataSelected, locationMatrix, humanOntology,subsetNodesIndex, structureData);
 % [coeff,score,latent] = pca(experimentsDataMatrix);
-% save('pcaData.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'probeCode', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors');
-% %save('pcaDataAllRegions.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'probeCode', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors');
+% save('pcaData.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'probeCode', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
+% %save('pcaDataAllRegions.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'probeCode', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
 
 load('pcaData.mat');
 %load('pcaDataAllRegions.mat');
@@ -22,6 +22,8 @@ numOfSubjects = max(max(experimentsSubjectMatrix));
 
 regionColors = regionColors/255;
 regionColors = createColorMap(length(regionNames));
+
+plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatrix, regionNames,regionColors);
 
 drawPCAregionColor(score, experimentRegion, experimentsSubjectMatrix, numOfSubjects, regionColors,regionNames);
 drawPCA(score, experimentRegion, experimentsSubjectMatrix, numOfSubjects,regionColors, regionNames);
@@ -43,23 +45,7 @@ function clacPCAforEachAreaSeperately(experimentsDataMatrix, experimentRegion, e
     end
 end
 
-function [aboveK ,numOfSample] = checkForMoreThenKSamples(locationMatrix, ontologyObject,k)
-    [allChilds,~] = ontologyObject.allChildNodes();
-    numOfSample = zeros(size(allChilds,1),1);
-    
-        
-    for i=1:size(allChilds,1)
-        indicesToMean = allChilds(i,:)';
-        for numOfPersons = length(locationMatrix)
-            releventExperiments = double(locationMatrix{numOfPersons}) * double(indicesToMean);
-            numOfSample(i) = numOfSample(i) + sum(releventExperiments);
-        end
-    end
-    
-    aboveK = numOfSample >= k;
-end
-
-function [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, experimentRegion]= calcPCAinStructures(experimentData, locationMatrix, ontologyObject, subsetNodesIndex)
+function [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, experimentRegion, mni_xyz, mri_voxel_xyz]= calcPCAinStructures(experimentData, locationMatrix, ontologyObject, subsetNodesIndex, structureData)
 
     numOfSubjects = length(experimentData);
     assert(length(experimentData) == length(locationMatrix));
@@ -72,8 +58,8 @@ function [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMa
     [allChilds,~] = ontologyObject.allChildNodes();
     childsOfSelectedNodes = allChilds(subsetNodesIndex,:);
     
-    [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode] = joinDataToOneBigMatrix(experimentData, locationMatrix);
-    experimentsDataMatrix = experimentsDataMatrix';
+    [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, mni_xyz, mri_voxel_xyz] = joinDataToOneBigMatrix(experimentData, locationMatrix, structureData);
+    %experimentsDataMatrix = experimentsDataMatrix';
     
     experimentRegion =  false(size(experimentsDataMatrix,1), size(childsOfSelectedNodes,1));
     for i=1:size(childsOfSelectedNodes,1) % loop over the high category areas
@@ -87,7 +73,8 @@ function [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMa
      experimentsLocationMatrix = experimentsLocationMatrix(~sampleWithNoLocation,:);
      experimentsSubjectMatrix = experimentsSubjectMatrix(~sampleWithNoLocation,:);
      experimentRegion = experimentRegion(~sampleWithNoLocation,:);
-    
+    mni_xyz = mni_xyz(~sampleWithNoLocation,:);
+    mri_voxel_xyz = mri_voxel_xyz(~sampleWithNoLocation,:);
 end
 
 function drawPCAregionColor(score, experimentRegion, experimentsSubjectMatrix, numOfSubjects, regionColors,regionNames)
@@ -130,11 +117,6 @@ function drawPCAregionColor(score, experimentRegion, experimentsSubjectMatrix, n
     figureHandle = gcf;     set(findall(figureHandle,'type','text'),'fontSize',14);
 end
 
-function colors = createColorMap(numOfElements)
-    colormapValues = colormap(jet);
-    indexOfColor = round(1:size(colormapValues,1)/numOfElements:size(colormapValues,1));
-    colors = colormapValues(indexOfColor,:);
-end
 function drawPCA(score, experimentRegion, experimentsSubjectMatrix, numOfSubjects, regionColors,regionNames)
     numberOfRegions = size(experimentRegion,2);
     markerType = {'+', 'o', '*' , 'x' , 's', 'd'};
@@ -194,33 +176,6 @@ function drawPCApeopleColor(score, experimentsSubjectMatrix,figureIndex,titleStr
    
 end
 
-function [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode] = joinDataToOneBigMatrix(experimentData, locationMatrix)
-    numberOfProbes = size(experimentData{1}.expressionMatrix, 1);
-    numberOfSamples = nan(length(experimentData),1);
-    numberOfSubjects = length(experimentData);
-    numberOfAreas = size(locationMatrix{1}, 2);
-    
-    for i=1:numberOfSubjects
-        numberOfSamples(i) = size(experimentData{i}.expressionMatrix, 2);
-    end
-    totalNumberOfSamples = sum(numberOfSamples);
-    
-    experimentsDataMatrix = nan(numberOfProbes, totalNumberOfSamples);
-    experimentsLocationMatrix = nan(totalNumberOfSamples, numberOfAreas);
-    experimentsSubjectMatrix = nan(totalNumberOfSamples,1);
-
-    lastIndex = 1;
-    probeCode = experimentData{1}.probeCode;
-    for i = 1:numberOfSubjects
-       assert(all(probeCode == experimentData{i}.probeCode));
-       indicesOfIntrests = lastIndex: lastIndex + numberOfSamples(i) - 1;
-       experimentsDataMatrix(:, indicesOfIntrests) = experimentData{i}.expressionMatrix;
-       experimentsLocationMatrix( indicesOfIntrests , :) = locationMatrix{i};
-       experimentsSubjectMatrix ( indicesOfIntrests) =  i ;
-       lastIndex = lastIndex + numberOfSamples(i);
-    end
-        
-end
 function [anovaScoresForGenes, samplesInRegion]= meanExpressionOfIndices(experimentData, locationMatrix, indicesToMean)
     
     for i = 1:length(locationMatrix)

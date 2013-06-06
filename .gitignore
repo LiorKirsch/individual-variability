@@ -3,3 +3,4 @@ www/
 *.html
 *~
 go/
+core.*
