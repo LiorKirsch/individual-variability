@@ -1,4 +1,4 @@
-function plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatrix, regionNames,regionColors)
+function mdsEmbeding = plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatrix, regionNames,regionColors)
 
     expressionDistances = distanceUsingMatrices(experimentsDataMatrix);
 %     all(all(expressionDistances == expressionDistances'))
@@ -26,16 +26,26 @@ function plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatri
     
     
     numberOfPeople = 6;
-    experimentsSubjectMatrixLogical = false(size(experimentsSubjectMatrix,1), numberOfPeople);
+    experimentsSubjectMatrixLogical = experimentsSubjectMatrix;
     for i =1:numberOfPeople
-        experimentsSubjectMatrixLogical(:,i) = experimentsSubjectMatrix == i;
         subjectNames{i} = sprintf('human%d',i);
     end
     
     subjectColor = createColorMap(6);
-    experimentSubjectColor = subjectColor(experimentsSubjectMatrix,:);
+    experimentSubjectColor = experimentsSubjectMatrixLogical * subjectColor;
     figure(2);
     scatterRegionColor(mdsEmbeding, experimentsSubjectMatrixLogical, experimentSubjectColor,subjectNames);
+    
+    for i =1:numberOfRegions
+        h = figure(i*321);
+        onlyInregion = experimentRegion(:,i);
+        scatterRegionColor(mdsEmbeding(onlyInregion,:), experimentsSubjectMatrixLogical(onlyInregion,:), experimentSubjectColor(onlyInregion,:),subjectNames);
+        title(regionNames(i));
+        ylim([-300 300]);
+        xlim([-300 300]);
+        fileName = ['regionsFigures\mds-',regionNames{i},'.png'];
+        saveas(h,fileName) ;
+    end
 end
 
 

@@ -1,6 +1,6 @@
 function subWithGoAndCheckPrecision()
 
-
+    close all;
 
     geneGo = load('humanGene2GoMatrix.mat', 'go_genes_mat', 'cat_ids', 'geneNames', 'aspects');
     
@@ -21,60 +21,70 @@ function subWithGoAndCheckPrecision()
     
     numberOfSamples = size(experimentsSubjectMatrixLogical,1);
     numberOfRegions = size(experimentRegion,2);
-    numberOfGenes = size(experimentsDataMatrix,2);
     assert(  numberOfSamples == size(experimentsDataMatrix,1) );
 
     
-    categoriesScores = nan(numberOfRegions,numberOfPeople);
-    distanceBetweenGroups = nan(numberOfRegions,numberOfPeople,numberOfPeople, numberOfGenes);
-    for m =1:numberOfRegions
-        currentAreaSamplesIndices = experimentRegion(:,m);
-        currentAreaDataMatrix = experimentsDataMatrix(currentAreaSamplesIndices,:);
-        currentSubjectMatrix = experimentsSubjectMatrixLogical(currentAreaSamplesIndices,:);
-        currentDist = distBetweenAndWithinGroups(currentAreaDataMatrix, currentSubjectMatrix);
-        distanceBetweenGroups(m,:,:,:) =  currentDist;
-        categoriesScores(m,:) = clusteringScore( currentDist );
-    end
+    [categoriesScores, ~] = calcRegionBetweenSubjectDist(experimentsSubjectMatrixLogical, experimentsDataMatrix, experimentRegion);
     
     % mean and std over people
     regionScores = mean(categoriesScores,2);
     regionStdScores = std(categoriesScores,1,2);
-    
     regionColors = createColorMap(length(regionNames));
     figure(1234123);
     drawBars(regionScores,regionStdScores,regionNames,regionColors,'between / within');
 
+%     addpath('~/Projects/general use functions/classifiy to neuron astro oligo/');
+%     entrez_ids = selectedProbesData.entrez_ids;
+%     neuronGliaClass = cahoyClassifyGene(entrez_ids, true);
+%     go_gene_mat = neuronGliaClass';
+%     cat_ids = {'astrocytes','neurons','oligodendrocytes'};
+    
     %find genes which appear both in GO and in Allen
     [commonGenes,commonGeneInGo,commonGeneInAllen] = intersect(geneGo.geneNames, selectedProbesData.gene_symbols);
+    entrez_ids = selectedProbesData.entrez_ids( commonGeneInAllen );
+    experimentsDataMatrix = experimentsDataMatrix(:, commonGeneInAllen);
     go_gene_mat = geneGo.go_genes_mat(:, commonGeneInGo);
     geneNames = geneGo.geneNames(commonGeneInGo);
+    
     go_cat_without_genes = sum(go_gene_mat,2) == 0;
     cat_ids = geneGo.cat_ids(~go_cat_without_genes);
     go_gene_mat = go_gene_mat(~go_cat_without_genes, :);
-    experimentsDataMatrix = experimentsDataMatrix(:, commonGeneInAllen);
+    aspects = geneGo.aspects(~go_cat_without_genes);
     
-    expressionDistances = distanceUsingMatrices(experimentsDataMatrix);
-    
-    diagIndices = 1:size(expressionDistances,1)+1:numel(expressionDistances); 
-    expressionDistances(diagIndices) = inf;
-    
-    
-    
+%     houseKeepingFileName = '/home/lab/ossnat/work/Data/Homo/Expression/HousekeepingGenes/Erez_2003_RefSeq_mRNA.txt';
+%     [~, ~, houseKeepingEntrezGeneID, ~] = textread(houseKeepingFileName, '%s %s %d %s', 'headerlines', 1,'delimiter','\t');
+%     go_gene_mat = ismember(entrez_ids, houseKeepingEntrezGeneID)';
+%     cat_ids = {'house keeping genes'};
+%      
     % for each category calc the new distance Score
     numOfGenesInCategory = full(sum(go_gene_mat,2));
     
+    
+    [categoriesScores, distanceBetweenGroups] = calcRegionBetweenSubjectDist(experimentsSubjectMatrixLogical, experimentsDataMatrix, experimentRegion);
+        % mean and std over people
+    regionScores = mean(categoriesScores,2);
+    regionStdScores = std(categoriesScores,1,2);
+    regionColors = createColorMap(length(regionNames));
+    figure(12234123);
+    drawBars(regionScores,regionStdScores,regionNames,regionColors,'between / within');
+
+    
     catDistanceScore = nan(length(cat_ids),numberOfPeople,numberOfRegions);
+    onlyCatDistanceScore = nan(length(cat_ids),numberOfPeople,numberOfRegions);
+
     
-    
-    
+    fprintf('\nrunning over categories:   ');
     for i = 1:size(catDistanceScore,1)
             currentCategorySubset = logical(full(go_gene_mat(i,:)));
             currentDistanceBetweenGroups = distanceBetweenGroups(:,:,:,~currentCategorySubset);
-            %currentDistanceBetweenGroups = distanceBetweenGroups(:,:,:,currentCategorySubset);
+            currentDistanceBetweenGroupsOnlyCat = distanceBetweenGroups(:,:,:,currentCategorySubset);
             
-            for m =1:numberOfRegions
+            parfor m =1:numberOfRegions
                 currentAreaDistanceBetweenGroups = squeeze(currentDistanceBetweenGroups(m,:,:,:));
                 catDistanceScore(i,:,m) = clusteringScore( currentAreaDistanceBetweenGroups );
+                
+                currentAreaOnlyCatDistanceBetweenGroups = squeeze(currentDistanceBetweenGroupsOnlyCat(m,:,:,:));
+                onlyCatDistanceScore(i,:,m) = clusteringScore( currentAreaOnlyCatDistanceBetweenGroups );
             end
             printPercentCounter(i, length(cat_ids) );
     end
@@ -98,11 +108,12 @@ function subWithGoAndCheckPrecision()
 %         end
 %     end
     
-    save('catScores.mat', 'catDistanceScore', 'cat_ids', 'go_gene_mat','geneNames','experimentsDataMatrix','numOfGenesInCategory','regionNames','experimentRegion');
+     save('catScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids', 'aspects','go_gene_mat','geneNames','experimentsDataMatrix','numOfGenesInCategory','regionNames','experimentRegion');
+%     save('catHouseKeepingScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids', 'go_gene_mat','geneNames','experimentsDataMatrix','numOfGenesInCategory','regionNames','experimentRegion');
     
-%    subsampleAndCheckPrecision(a, 'newRandomClasses.mat');
-%    [a,b,c] = unique(numOfGenesInCategory);
 end
+
+
 
 function drawPrecisionStatistics(meanPerPerson, stdPerPerson, sizesOfClasses)
 

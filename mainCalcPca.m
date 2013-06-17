@@ -1,24 +1,24 @@
 function mainCalcPca()
 
 
-% load('expressionRawDataWithOntology.mat', 'expressionDataSelected',  'humanOntology','selectedProbesData','locationMatrix','structureData');
+% load('easyFormatHumanData.mat');
 % load('humanOntologyObject.mat');
 % load('subset.mat');
 % 
-% [aboveK ,numOfSamples] = checkForMoreThenKSamples(locationMatrix, humanOntology,10);
+% [aboveK ,numOfSamples] = checkForMoreThenKSamples(experimentsLocationMatrix, experimentsSubjectMatrixLogical, humanOntology,5);
 % subsetNodesIndex = subsetNodesIndex & aboveK;
 % %subsetNodesIndex = true(size(aboveK));
 % regionColors = humanOntology.structureColors(subsetNodesIndex,:);
 % regionNames = humanOntology.structureLabels(subsetNodesIndex,4);
 % 
-% [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, experimentRegion, mni_xyz, mri_voxel_xyz] = calcPCAinStructures(expressionDataSelected, locationMatrix, humanOntology,subsetNodesIndex, structureData);
+% [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, experimentRegion, mni_xyz, mri_voxel_xyz] = calcPCAinStructures(experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrixLogical,humanOntology,subsetNodesIndex, mni_xyz, mri_voxel_xyz);
 % [coeff,score,latent] = pca(experimentsDataMatrix);
-% save('pcaData.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'probeCode', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
-% %save('pcaDataAllRegions.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'probeCode', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
+% save('pcaData.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'selectedProbesData', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
+% %save('pcaDataAllRegions.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'selectedProbesData', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
 
 load('pcaData.mat');
 %load('pcaDataAllRegions.mat');
-numOfSubjects = max(max(experimentsSubjectMatrix));
+numOfSubjects = size(experimentsSubjectMatrix,2);
 
 regionColors = regionColors/255;
 regionColors = createColorMap(length(regionNames));
@@ -45,34 +45,18 @@ function clacPCAforEachAreaSeperately(experimentsDataMatrix, experimentRegion, e
     end
 end
 
-function [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, experimentRegion, mni_xyz, mri_voxel_xyz]= calcPCAinStructures(experimentData, locationMatrix, ontologyObject, subsetNodesIndex, structureData)
+function [experimentsDataMatrix, locationMatrix, experimentsSubjectMatrixLogical, experimentRegion, mni_xyz, mri_voxel_xyz]= calcPCAinStructures(experimentsDataMatrix, locationMatrix, experimentsSubjectMatrixLogical,ontologyObject, subsetNodesIndex, mni_xyz, mri_voxel_xyz)
 
-    numOfSubjects = length(experimentData);
-    assert(length(experimentData) == length(locationMatrix));
-    for i = 1:length(experimentData)
-        assert(size(experimentData{i}.expressionMatrix,2) == size(locationMatrix{i},1));
-        assert(size(locationMatrix{i},2) == size(ontologyObject.dependencyMatrix,1) );
-    end
+    assert(size(experimentsDataMatrix,1) == size(locationMatrix,1));
+    assert(size(locationMatrix,2) == size(ontologyObject.dependencyMatrix,1) );
     
-    
-    [allChilds,~] = ontologyObject.allChildNodes();
-    childsOfSelectedNodes = allChilds(subsetNodesIndex,:);
-    
-    [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, probeCode, mni_xyz, mri_voxel_xyz] = joinDataToOneBigMatrix(experimentData, locationMatrix, structureData);
-    %experimentsDataMatrix = experimentsDataMatrix';
-    
-    experimentRegion =  false(size(experimentsDataMatrix,1), size(childsOfSelectedNodes,1));
-    for i=1:size(childsOfSelectedNodes,1) % loop over the high category areas
-        indicesToMean = childsOfSelectedNodes(i,:)';
-        releventExperiments = double(experimentsLocationMatrix) * double(indicesToMean);
-        experimentRegion(:,i) = logical(releventExperiments);
-    end
-    
+    experimentRegion = getRegionOfGrossStructures(subsetNodesIndex, locationMatrix, ontologyObject);
+
     sampleWithNoLocation = ~any(experimentRegion,2);
-     experimentsDataMatrix = experimentsDataMatrix(~sampleWithNoLocation,:);
-     experimentsLocationMatrix = experimentsLocationMatrix(~sampleWithNoLocation,:);
-     experimentsSubjectMatrix = experimentsSubjectMatrix(~sampleWithNoLocation,:);
-     experimentRegion = experimentRegion(~sampleWithNoLocation,:);
+    experimentsDataMatrix = experimentsDataMatrix(~sampleWithNoLocation,:);
+    locationMatrix = locationMatrix(~sampleWithNoLocation,:);
+    experimentsSubjectMatrixLogical = experimentsSubjectMatrixLogical(~sampleWithNoLocation,:);
+    experimentRegion = experimentRegion(~sampleWithNoLocation,:);
     mni_xyz = mni_xyz(~sampleWithNoLocation,:);
     mri_voxel_xyz = mri_voxel_xyz(~sampleWithNoLocation,:);
 end

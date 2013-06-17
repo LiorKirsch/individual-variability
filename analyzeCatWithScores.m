@@ -1,4 +1,4 @@
-function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels, htmlFileName,title, catNames)
+function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels, htmlFileName,title, numOfGenesInCategory)
 
 
     
@@ -9,11 +9,14 @@ function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels,
 
     sortedValues = nan(length(cat_ids), length(regionLabels));
     sortedCatIndices = nan(length(cat_ids), length(regionLabels));
+    numOfgenesInCatAndRegion = nan(length(cat_ids), length(regionLabels));
     sortedCatNames = cell(length(regionLabels),1);
     
-    if ~exist('catNames', 'var')
-        catNames = go_id2name(cat_ids, GO);
+    if ~exist('numOfGenesInCategory', 'var')
+        numOfGenesInCategory = nan(size(cat_ids));
     end
+    
+    catNames = go_id2name(cat_ids, GO);
     
     for i =1:length(regionLabels)
        
@@ -25,10 +28,10 @@ function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels,
 %        [sortedValues(:,i), sortIndices] = sort(fdrCorrectedValues);
        sortedCatIndices(:,i) = cat_ids(sortIndices);
        sortedCatNames{i} = catNames(sortIndices);
-
+       numOfgenesInCatAndRegion(:,i) = numOfGenesInCategory(sortIndices);
     end
 
-    printCatScoreIntoHtml(regionLabels, sortedValues, sortedCatIndices, sortedCatNames, title, htmlFileName)
+    printCatScoreIntoHtml(regionLabels, sortedValues, sortedCatIndices, sortedCatNames, numOfgenesInCatAndRegion, title, htmlFileName)
 
 end
 
