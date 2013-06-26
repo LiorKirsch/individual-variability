@@ -1,4 +1,7 @@
 function [categoriesScores, distanceBetweenGroups] = calcRegionBetweenSubjectDist(experimentsSubjectMatrixLogical, experimentsDataMatrix, experimentRegion)
+% for each region use the samples taken from the region and calculate
+% between-within score according to the sample-subject matrix.
+
     numberOfPeople = size(experimentsSubjectMatrixLogical,2);
     numberOfSamples = size(experimentsSubjectMatrixLogical,1);
     numberOfRegions = size(experimentRegion,2);

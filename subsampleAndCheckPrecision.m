@@ -5,7 +5,7 @@ function subsampleAndCheckPrecision(sizesOfClasses, fileName)
     end
 
     geneGo = load('humanGene2GoMatrix.mat', 'go_genes_mat', 'cat_ids', 'geneNames', 'aspects');
-    load('expressionRawDataWithOntology.mat', 'selectedProbesData');
+    %load('expressionRawDataWithOntology.mat', 'selectedProbesData');
 
     if exist('sizesOfClasses','var')
         sizesOfClasses = setdiff(sizesOfClasses, unique(sum(geneGo.go_genes_mat,2)) );
@@ -13,19 +13,12 @@ function subsampleAndCheckPrecision(sizesOfClasses, fileName)
         sizesOfClasses = unique(sum(geneGo.go_genes_mat,2));
     end
     
-    load('dataWithDistance.mat');
+    %load('dataWithDistance.mat');
+    load('pcaData.mat','experimentsSubjectMatrix', 'experimentsDataMatrix', 'experimentRegion','regionNames','selectedProbesData');
     
-    
-    numberOfPeople = 6;
+    numberOfPeople = size(experimentsSubjectMatrix,2);
     numberOfRepetitions = 1000;
 
-    experimentsSubjectMatrixLogical = false(size(experimentsSubjectMatrix,1), numberOfPeople);
-    for i =1:numberOfPeople
-        experimentsSubjectMatrixLogical(:,i) = experimentsSubjectMatrix == i;
-    end
-    
-    
-    
     
     %find genes which appear both in GO and in Allen
     [commonGenes,commonGeneInGo,commonGeneInAllen] = intersect(geneGo.geneNames, selectedProbesData.gene_symbols);
@@ -37,10 +30,19 @@ function subsampleAndCheckPrecision(sizesOfClasses, fileName)
     experimentsDataMatrix = experimentsDataMatrix(:, commonGeneInAllen);
     aspects = geneGo.aspects(~go_cat_without_genes);
     
+    selectedProbesData.probe_ids = selectedProbesData.probe_ids(commonGeneInAllen);
+    selectedProbesData.probe_names = selectedProbesData.probe_names(commonGeneInAllen);
+    selectedProbesData.gene_ids = selectedProbesData.gene_ids(commonGeneInAllen);
+    selectedProbesData.gene_symbols = selectedProbesData.gene_symbols(commonGeneInAllen);
+    selectedProbesData.gene_names = selectedProbesData.gene_names(commonGeneInAllen);
+    selectedProbesData.entrez_ids = selectedProbesData.entrez_ids(commonGeneInAllen);
+    selectedProbesData.chromosome = selectedProbesData.chromosome(commonGeneInAllen);
+    selectedProbesData.bestProbeForGene = selectedProbesData.bestProbeForGene(commonGeneInAllen);
+    
     expressionDistances = sqrt(    unSquaredPdist(experimentsDataMatrix)    );
     sizesOfClasses = unique(sum(go_gene_mat,2));
-    numberOfSamples = size(experimentsSubjectMatrixLogical,1);
-    numberOfCategories = size(experimentsSubjectMatrixLogical,2);
+    numberOfSamples = size(experimentsSubjectMatrix,1);
+    numberOfCategories = size(experimentsSubjectMatrix,2);
     totalNumberOfGenes = size(experimentsDataMatrix,2);
     numberOfRegions = size(experimentRegion,2);
     assert(  numberOfSamples == size(experimentsDataMatrix,1) );
@@ -60,24 +62,24 @@ function subsampleAndCheckPrecision(sizesOfClasses, fileName)
     fprintf('\ni completed    ');
     
     
-    [categoriesScores, distanceBetweenGroups] = calcRegionBetweenSubjectDist(experimentsSubjectMatrixLogical, experimentsDataMatrix, experimentRegion);
+    [categoriesScores, distanceBetweenGroups] = calcRegionBetweenSubjectDist(experimentsSubjectMatrix, experimentsDataMatrix, experimentRegion);
     
     percentInCategory = nan(numberOfRepetitions,numberOfCategories, numberOfRegions,length(sizesOfClasses) );
     percentInCategoryUsingGenes = nan(numberOfRepetitions,numberOfCategories, numberOfRegions,length(sizesOfClasses) );
     
-    size(distanceBetweenGroups)
+    %size(distanceBetweenGroups)
     for i = 1:length(sizesOfClasses)
-        tic
+        
         sizeOfClass = sizesOfClasses(i);
 
-        [percentInCategory(:,:,:,i) , percentInCategoryUsingGenes(:,:,:,i)] = getClusteringScoresOfArandomSet(numberOfRepetitions, sizeOfClass, distanceBetweenGroups, experimentsDataMatrix, experimentsSubjectMatrixLogical);
+        [percentInCategory(:,:,:,i) , percentInCategoryUsingGenes(:,:,:,i)] = getClusteringScoresOfArandomSet(numberOfRepetitions, sizeOfClass, distanceBetweenGroups, experimentsDataMatrix, experimentsSubjectMatrix);
 %         toc;
        % fprintf('     ');
         printPercentCounter(i, length(sizesOfClasses));
        % fprintf('\n');
     end
     
-    save(fileName,'percentInCategory','percentInCategoryUsingGenes','sizesOfClasses','experimentsDataMatrix', 'experimentsSubjectMatrixLogical','experimentRegion','cat_ids', 'aspects','go_gene_mat','geneNames');
+    save(fileName,'percentInCategory','percentInCategoryUsingGenes','sizesOfClasses','experimentsDataMatrix', 'experimentsSubjectMatrix','experimentRegion','cat_ids', 'aspects','go_gene_mat','geneNames','selectedProbesData');
     
 end
 
@@ -96,7 +98,7 @@ function [percentInCategory,percentInCategoryWithGenes] = getClusteringScoresOfA
        randomPermMatrix (i,randomSubSet) = true;
     end
     
-    for m =1:numberOfRegions
+    parfor m =1:numberOfRegions
         currentAreaDistanceBetweenGroups = squeeze(distanceBetweenGroups(m,:,:,:));
         distanctUsingAllFeatures = sum(currentAreaDistanceBetweenGroups,3);
         distanctUsingAllFeatures = squeeze( distanctUsingAllFeatures );

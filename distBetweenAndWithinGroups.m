@@ -1,5 +1,5 @@
 function distanceBetweenCategories = distBetweenAndWithinGroups(dataMatrix, samplesInGroup)
-    
+% for each feature calculate the distance between categories (subjects)    
     numberOfCategories = size(samplesInGroup,2);
     numberOfFeatures = size(dataMatrix,2);
     

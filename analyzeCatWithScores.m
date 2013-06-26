@@ -1,7 +1,4 @@
-function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels, htmlFileName,title, numOfGenesInCategory)
-
-
-    
+function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels, go_gene_mat, geneNames,htmlFileName,title, numOfGenesInCategory, normalizedMeanGeneScore)
 
     GO = geneont('file', 'gene_ontology.obo.txt');
     cellularComponentCategories = strcmp('C', aspects); % not cellular components
@@ -28,10 +25,11 @@ function analyzeCatWithScores(cat_ids, aspects, cat_pvalue_scores, regionLabels,
 %        [sortedValues(:,i), sortIndices] = sort(fdrCorrectedValues);
        sortedCatIndices(:,i) = cat_ids(sortIndices);
        sortedCatNames{i} = catNames(sortIndices);
+       sorted_gene_mat{i} = go_gene_mat(sortIndices,:);
        numOfgenesInCatAndRegion(:,i) = numOfGenesInCategory(sortIndices);
     end
 
-    printCatScoreIntoHtml(regionLabels, sortedValues, sortedCatIndices, sortedCatNames, numOfgenesInCatAndRegion, title, htmlFileName)
+    printCatScoreIntoHtml(regionLabels, sortedValues, sortedCatIndices, sortedCatNames, sorted_gene_mat, geneNames, numOfgenesInCatAndRegion, title, htmlFileName, normalizedMeanGeneScore)
 
 end
 

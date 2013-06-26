@@ -3,7 +3,8 @@ function analyzeGoCat()
     %load('catScoresNotRemove.mat');
     
     load('randomSizePrecision','percentInCategoryUsingGenes', 'percentInCategory','sizesOfClasses');
-    houseKeeping = load('catHouseKeepingScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids','numOfGenesInCategory');
+    houseKeeping = load('catHouseKeepingScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids','numOfGenesInCategory','go_gene_mat');
+    singleGeneScores = load('singleGeneScores.mat', 'singleGeneDistanceScore', 'onlySingleGeneDistanceScore','geneNames');
     
     subsetConf.onlyBrain = false;
     subsetConf.minCatSize = 50;
@@ -13,18 +14,22 @@ function analyzeGoCat()
     
     [cat_ids, aspects, go_gene_mat, numOfGenesInCategory, catDistanceScore, onlyCatDistanceScore] = chooseSubsetOfCategories(subsetConf, cat_ids, aspects, go_gene_mat, numOfGenesInCategory, catDistanceScore, onlyCatDistanceScore);
 
-    cat_ids = [1, cat_ids];
-    numOfGenesInCategory = [560 ; numOfGenesInCategory];
-    catDistanceScore = cat(1, houseKeeping.catDistanceScore, catDistanceScore);
-    onlyCatDistanceScore = cat(1, houseKeeping.onlyCatDistanceScore, onlyCatDistanceScore);
+%% add the house keeping genes
+%     cat_ids = [1, cat_ids];
+%     numOfGenesInCategory = [560 ; numOfGenesInCategory];
+%     go_gene_mat = [houseKeeping.go_gene_mat, go_gene_mat];
+%     catDistanceScore = cat(1, houseKeeping.catDistanceScore, catDistanceScore);
+%     onlyCatDistanceScore = cat(1, houseKeeping.onlyCatDistanceScore, onlyCatDistanceScore);
     
     if withOutGenes
         meanRandCatScores = squeeze(mean(percentInCategory,2));
         meanCatScores = squeeze(mean(catDistanceScore,2));
+        [normalizedMeanGeneScore, normalizedMeanGeneScoreBelow] = createSingleGeneList(singleGeneScores.singleGeneDistanceScore, singleGeneScores.geneNames, geneNames);
     else
         catDistanceScore = onlyCatDistanceScore;
         meanRandCatScores = squeeze(mean(percentInCategoryUsingGenes,2));
         meanCatScores = squeeze(mean(onlyCatDistanceScore,2));
+        [normalizedMeanGeneScore, normalizedMeanGeneScoreBelow] = createSingleGeneList(singleGeneScores.onlySingleGeneDistanceScore, singleGeneScores.geneNames, geneNames);
     end
     
     
@@ -37,7 +42,7 @@ function analyzeGoCat()
     
 
     subSetNames = {'Cerebellar Cortex', 'Cingulate gyrus', 'Occipital Lobe'};
-    %subSetNames =regionNames;
+    subSetNames =regionNames;
     
     for i =1:length(subSetNames)
        subsestResultsAbove{i} =  correctedNormalScoresAbove(:, strcmp(regionNames,subSetNames{i}) );
@@ -45,56 +50,83 @@ function analyzeGoCat()
     end
    
     if subsetConf.onlyBrain
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subSetNames, 'variBrainAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory);
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subSetNames, 'variBrainBelowMean.html','without cat variability is reduced', numOfGenesInCategory);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subSetNames, go_gene_mat, geneNames,'variBrainAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory,normalizedMeanGeneScore);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subSetNames, go_gene_mat, geneNames,'variBrainBelowMean.html','without cat variability is reduced', numOfGenesInCategory,normalizedMeanGeneScoreBelow);
     else
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subSetNames, 'variAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory);
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subSetNames, 'variBelowMean.html','without cat variability is reduced', numOfGenesInCategory);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subSetNames, go_gene_mat, geneNames,'variAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory,normalizedMeanGeneScore);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subSetNames, go_gene_mat, geneNames,'variBelowMean.html','without cat variability is reduced', numOfGenesInCategory,normalizedMeanGeneScoreBelow);
     end
    
-    plotScoresAndCatSize(numOfGenesInCategory, meanCatScores,meanRandCatScores,sizesOfClasses,regionNames);
-    
-%     meanOnlyCatScores = squeeze(mean(onlyCatDistanceScore,2));
-%     plotScoresAndCatSize(numOfGenesInCategory, meanOnlyCatScores,regionNames);
-    
-  
-    [a,b,c] = unique(numOfGenesInCategory);
-    %subsampleAndCheckPrecision(a, 'newRandomClasses.mat');
-   
-   
-    random1 = load('randomSizePrecision.mat','percentInCategory','sizesOfClasses');
-%     random2 = load('newRandomClasses.mat','percentInCategory','sizesOfClasses');
-    
-    
-    
-%     randomScores = cat(2, random1.percentInCategory, random2.percentInCategory);
-%     catSizes = cat(1, random1.sizesOfClasses, random2.sizesOfClasses);
-    randomScores = random1.percentInCategory;
-    catSizes = random1.sizesOfClasses;
-    
-    meanRandomScores = mean(randomScores,2);
-    meanCatScores = mean(catDistanceScore,2);
-    
-    
-    pvalues = nan(length(cat_ids),1);
-    decisions = nan(length(cat_ids),1);
-    
-    [numOfGenesInCategory ,sortIndecies]= sort(numOfGenesInCategory);
-    catDistanceScore = catDistanceScore(sortIndecies);
-    cat_ids = cat_ids(sortIndecies);
-    go_gene_mat = go_gene_mat(sortIndecies,:);
-    meanCatScores = meanCatScores(sortIndecies);
-    
-    for i = 1:length(cat_ids)
-        numberOfGenesInCurrentCat = numOfGenesInCategory(i);
-        randomSampleIndex = catSizes == numberOfGenesInCurrentCat;
-        assert( (sum(randomSampleIndex)==1) );
-        randomScores = meanRandomScores(:,randomSampleIndex);
-        [pvalues(i),decisions(i),stats] = ranksum(randomScores,meanCatScores(i) ) ;
-    end
+% % % %     plotScoresAndCatSize(numOfGenesInCategory, meanCatScores,meanRandCatScores,sizesOfClasses,regionNames);
+% % % %     
+% % % % %     meanOnlyCatScores = squeeze(mean(onlyCatDistanceScore,2));
+% % % % %     plotScoresAndCatSize(numOfGenesInCategory, meanOnlyCatScores,regionNames);
+% % % %     
+% % % %   
+% % % %     [a,b,c] = unique(numOfGenesInCategory);
+% % % %     %subsampleAndCheckPrecision(a, 'newRandomClasses.mat');
+% % % %    
+% % % %    
+% % % %     random1 = load('randomSizePrecision.mat','percentInCategory','sizesOfClasses');
+% % % % %     random2 = load('newRandomClasses.mat','percentInCategory','sizesOfClasses');
+% % % %     
+% % % %     
+% % % %     
+% % % % %     randomScores = cat(2, random1.percentInCategory, random2.percentInCategory);
+% % % % %     catSizes = cat(1, random1.sizesOfClasses, random2.sizesOfClasses);
+% % % %     randomScores = random1.percentInCategory;
+% % % %     catSizes = random1.sizesOfClasses;
+% % % %     
+% % % %     meanRandomScores = mean(randomScores,2);
+% % % %     meanCatScores = mean(catDistanceScore,2);
+% % % %     
+% % % %     
+% % % %     pvalues = nan(length(cat_ids),1);
+% % % %     decisions = nan(length(cat_ids),1);
+% % % %     
+% % % %     [numOfGenesInCategory ,sortIndecies]= sort(numOfGenesInCategory);
+% % % %     catDistanceScore = catDistanceScore(sortIndecies);
+% % % %     cat_ids = cat_ids(sortIndecies);
+% % % %     go_gene_mat = go_gene_mat(sortIndecies,:);
+% % % %     meanCatScores = meanCatScores(sortIndecies);
+% % % %     
+% % % %     for i = 1:length(cat_ids)
+% % % %         numberOfGenesInCurrentCat = numOfGenesInCategory(i);
+% % % %         randomSampleIndex = catSizes == numberOfGenesInCurrentCat;
+% % % %         assert( (sum(randomSampleIndex)==1) );
+% % % %         randomScores = meanRandomScores(:,randomSampleIndex);
+% % % %         [pvalues(i),decisions(i),stats] = ranksum(randomScores,meanCatScores(i) ) ;
+% % % %     end
     
 end
 
+function [normalizedMeanGeneScore, normalizedMeanGeneScoreBelow] = createSingleGeneList(singleGeneDistanceScore, singleGeneNames, geneNames)
+    numberOfPeople = size(singleGeneDistanceScore,2);
+    numberOfGenes = size(singleGeneDistanceScore,1);
+    numberOfRegions = size(singleGeneDistanceScore,3);
+    assert(all(strcmp(singleGeneNames, geneNames)));
+    
+    meanGeneScore = mean(singleGeneDistanceScore,2);
+    meanGeneScore = squeeze(meanGeneScore);
+    
+    normalizedMeanGeneScore = nan(numberOfGenes, numberOfRegions);
+    normalizedMeanGeneScoreBelow = nan( numberOfGenes, numberOfRegions );
+    sortOrdering = nan(size(meanGeneScore));
+    
+    for i = 1:numberOfRegions
+        currentAreaScores = meanGeneScore(:,i);
+        meanScore = mean(currentAreaScores);
+        scoresStd = std(currentAreaScores);
+%         normalizedMeanGeneScore(:,i) = currentAreaScores / sum(currentAreaScores);
+%         [~, sortOrdering(:,i)] = sort(currentAreaScores);
+        
+        for j = 1:numberOfGenes
+            [~, normalizedMeanGeneScore(j,i) ] = ztest(currentAreaScores(j) ,meanScore,scoresStd, 0.05, 'right');
+            [~, normalizedMeanGeneScoreBelow(j,i) ] = ztest(currentAreaScores(j),meanScore,scoresStd, 0.05, 'left');
+        end
+    end
+    
+end
 function correctedScores = decideSignificance(scores)
     numberOfGenes = size(scores,1);
     numberOfRegions = size(scores,2);

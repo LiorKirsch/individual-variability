@@ -1,29 +1,32 @@
 function mainCalcPca()
 
 
-% load('easyFormatHumanData.mat');
-% load('humanOntologyObject.mat');
-% load('subset.mat');
-% 
-% [aboveK ,numOfSamples] = checkForMoreThenKSamples(experimentsLocationMatrix, experimentsSubjectMatrixLogical, humanOntology,5);
-% subsetNodesIndex = subsetNodesIndex & aboveK;
-% %subsetNodesIndex = true(size(aboveK));
-% regionColors = humanOntology.structureColors(subsetNodesIndex,:);
-% regionNames = humanOntology.structureLabels(subsetNodesIndex,4);
-% 
-% [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, experimentRegion, mni_xyz, mri_voxel_xyz] = calcPCAinStructures(experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrixLogical,humanOntology,subsetNodesIndex, mni_xyz, mri_voxel_xyz);
+load('easyFormatHumanData.mat');
+load('humanOntologyObject.mat');
+load('subset.mat');
+
+[aboveK ,numOfSamples] = checkForMoreThenKSamples(experimentsLocationMatrix, experimentsSubjectMatrixLogical, humanOntology,5);
+subsetNodesIndex = subsetNodesIndex & aboveK;
+%subsetNodesIndex = true(size(aboveK));
+regionColors = humanOntology.structureColors(subsetNodesIndex,:);
+regionNames = humanOntology.structureLabels(subsetNodesIndex,4);
+
+[experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, experimentRegion, mni_xyz, mri_voxel_xyz] = calcPCAinStructures(experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrixLogical,humanOntology,subsetNodesIndex, mni_xyz, mri_voxel_xyz);
 % [coeff,score,latent] = pca(experimentsDataMatrix);
 % save('pcaData.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'selectedProbesData', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
 % %save('pcaDataAllRegions.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'selectedProbesData', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
 
 load('pcaData.mat');
+load('humanOntologyObject.mat');
 %load('pcaDataAllRegions.mat');
 numOfSubjects = size(experimentsSubjectMatrix,2);
 
 regionColors = regionColors/255;
 regionColors = createColorMap(length(regionNames));
 
-plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatrix, regionNames,regionColors);
+regionColors = humanOntology.getColorByRegionName(regionNames);
+
+%plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatrix, regionNames,regionColors);
 
 drawPCAregionColor(score, experimentRegion, experimentsSubjectMatrix, numOfSubjects, regionColors,regionNames);
 drawPCA(score, experimentRegion, experimentsSubjectMatrix, numOfSubjects,regionColors, regionNames);
@@ -89,7 +92,7 @@ function drawPCAregionColor(score, experimentRegion, experimentsSubjectMatrix, n
     end
     figure(1);
     xlabel('Principle component #1');     ylabel('Principle component #2');
-    legend(regionNames);
+    legend(regionNames,'Location','SouthWest');
     figureHandle = gcf;     set(findall(figureHandle,'type','text'),'fontSize',14);
     figure(2);
     xlabel('Principle component #2');     ylabel('Principle component #3');
@@ -109,7 +112,7 @@ function drawPCA(score, experimentRegion, experimentsSubjectMatrix, numOfSubject
     experimentRegionColor = regionColors(experimentRegionIndex,:);
     experimentRegionColor = experimentRegionColor/255;
     for i =1:numOfSubjects
-        subjectIExperimentsIndices = experimentsSubjectMatrix == i ;
+        subjectIExperimentsIndices = experimentsSubjectMatrix(:,i) ;
         
         subjectIExperiments = score(subjectIExperimentsIndices,:);
         subjectIAreas = experimentRegionIndex(subjectIExperimentsIndices) ;
@@ -137,15 +140,16 @@ function drawPCApeopleColor(score, experimentsSubjectMatrix,figureIndex,titleStr
     if ~exist('figureIndex','var')
         figureIndex = 0;
     end
+    experimentsSubjectMatrix = experimentsSubjectMatrix * (1:size(experimentsSubjectMatrix,2))';
     figure(figureIndex+ 1);
     subplot(2,2,1);
-    scatter(score(:,1),score(:,2),50,experimentsSubjectMatrix,'filled');
+    scatter(score(:,1),score(:,2),50,experimentsSubjectMatrix);
     xlabel('Principle component #1');    ylabel('Principle component #2');
     subplot(2,2,2);
-    scatter(score(:,2),score(:,3),50,experimentsSubjectMatrix,'filled');
+    scatter(score(:,2),score(:,3),50,experimentsSubjectMatrix);
     xlabel('Principle component #2');    ylabel('Principle component #3');
     subplot(2,2,3);
-    scatter(score(:,3),score(:,4),50,experimentsSubjectMatrix,'filled');
+    scatter(score(:,3),score(:,4),50,experimentsSubjectMatrix);
     xlabel('Principle component #3');    ylabel('Principle component #4');
     
     subplot(2,2,4);

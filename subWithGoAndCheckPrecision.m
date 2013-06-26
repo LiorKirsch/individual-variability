@@ -4,27 +4,23 @@ function subWithGoAndCheckPrecision()
 
     geneGo = load('humanGene2GoMatrix.mat', 'go_genes_mat', 'cat_ids', 'geneNames', 'aspects');
     
-    load('dataWithDistance.mat','experimentsSubjectMatrix', 'experimentsDataMatrix', 'expressionDistances','experimentRegion','regionNames');
-    load('expressionRawDataWithOntology.mat', 'selectedProbesData');
+    %load('dataWithDistance.mat','experimentsSubjectMatrix', 'experimentsDataMatrix', 'expressionDistances','experimentRegion','regionNames');
+    %load('expressionRawDataWithOntology.mat', 'selectedProbesData');
     
+    load('pcaData.mat','experimentsSubjectMatrix', 'experimentsDataMatrix', 'experimentRegion','regionNames','selectedProbesData');
 %     randomSizePrecision =  load('randomSizePrecision.mat','percentInCategory','sizesOfClasses');
 %     
 %     [meanPerPerson, stdPerPerson] = calcNormalForEachPerson(randomSizePrecision.percentInCategory);
-    numberOfPeople = 6;
+    numberOfPeople = size(experimentsSubjectMatrix,2);
     
    % drawPrecisionStatistics(meanPerPerson, stdPerPerson, randomSizePrecision.sizesOfClasses);
         
-    experimentsSubjectMatrixLogical = false(size(experimentsSubjectMatrix,1), numberOfPeople);
-    for i =1:numberOfPeople
-        experimentsSubjectMatrixLogical(:,i) = experimentsSubjectMatrix == i;
-    end
-    
-    numberOfSamples = size(experimentsSubjectMatrixLogical,1);
+    numberOfSamples = size(experimentsSubjectMatrix,1);
     numberOfRegions = size(experimentRegion,2);
     assert(  numberOfSamples == size(experimentsDataMatrix,1) );
 
     
-    [categoriesScores, ~] = calcRegionBetweenSubjectDist(experimentsSubjectMatrixLogical, experimentsDataMatrix, experimentRegion);
+    [categoriesScores, ~] = calcRegionBetweenSubjectDist(experimentsSubjectMatrix, experimentsDataMatrix, experimentRegion);
     
     % mean and std over people
     regionScores = mean(categoriesScores,2);
@@ -46,6 +42,15 @@ function subWithGoAndCheckPrecision()
     go_gene_mat = geneGo.go_genes_mat(:, commonGeneInGo);
     geneNames = geneGo.geneNames(commonGeneInGo);
     
+    selectedProbesData.probe_ids = selectedProbesData.probe_ids(commonGeneInAllen);
+    selectedProbesData.probe_names = selectedProbesData.probe_names(commonGeneInAllen);
+    selectedProbesData.gene_ids = selectedProbesData.gene_ids(commonGeneInAllen);
+    selectedProbesData.gene_symbols = selectedProbesData.gene_symbols(commonGeneInAllen);
+    selectedProbesData.gene_names = selectedProbesData.gene_names(commonGeneInAllen);
+    selectedProbesData.entrez_ids = selectedProbesData.entrez_ids(commonGeneInAllen);
+    selectedProbesData.chromosome = selectedProbesData.chromosome(commonGeneInAllen);
+    selectedProbesData.bestProbeForGene = selectedProbesData.bestProbeForGene(commonGeneInAllen);
+    
     go_cat_without_genes = sum(go_gene_mat,2) == 0;
     cat_ids = geneGo.cat_ids(~go_cat_without_genes);
     go_gene_mat = go_gene_mat(~go_cat_without_genes, :);
@@ -60,7 +65,7 @@ function subWithGoAndCheckPrecision()
     numOfGenesInCategory = full(sum(go_gene_mat,2));
     
     
-    [categoriesScores, distanceBetweenGroups] = calcRegionBetweenSubjectDist(experimentsSubjectMatrixLogical, experimentsDataMatrix, experimentRegion);
+    [categoriesScores, distanceBetweenGroups] = calcRegionBetweenSubjectDist(experimentsSubjectMatrix, experimentsDataMatrix, experimentRegion);
         % mean and std over people
     regionScores = mean(categoriesScores,2);
     regionStdScores = std(categoriesScores,1,2);
@@ -108,7 +113,7 @@ function subWithGoAndCheckPrecision()
 %         end
 %     end
     
-     save('catScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids', 'aspects','go_gene_mat','geneNames','experimentsDataMatrix','numOfGenesInCategory','regionNames','experimentRegion');
+     save('catScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids', 'aspects','go_gene_mat','geneNames','experimentsDataMatrix','numOfGenesInCategory','regionNames','experimentRegion','selectedProbesData');
 %     save('catHouseKeepingScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids', 'go_gene_mat','geneNames','experimentsDataMatrix','numOfGenesInCategory','regionNames','experimentRegion');
     
 end

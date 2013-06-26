@@ -14,7 +14,40 @@ classdef ontology
             undirectedMatrix = obj.dependencyMatrix + obj.dependencyMatrix';
         end
         
-        
+        function ontologyColors = createColors(obj)
+           ontologySize = size(obj.dependencyMatrix,1);
+           newColorMap = createJetColorMap(ontologySize);
+           colors = ones(ontologySize,1);
+
+%            colors = obj.recursiveColor(2, 0,1,colors);
+           
+           segments = linspace(0,1,9) ;
+           colors = obj.recursiveColor(4, segments(1),segments(end-5),colors);
+           colors = obj.recursiveColor(302, segments(end-5),segments(end-4),colors);
+           colors = obj.recursiveColor(423, segments(end-4),segments(end-3),colors);
+           colors = obj.recursiveColor(752, segments(end-3),segments(end-2),colors);
+           colors = obj.recursiveColor(923, segments(end-2),segments(end-1),colors);
+           colors = obj.recursiveColor(1114, segments(end-1),segments(end),colors);
+           
+           colorIndex = ceil( colors * ontologySize);
+            ontologyColors = newColorMap(colorIndex,:);
+        end
+        function colors = recursiveColor(obj, nodeIndex, startInterval,endInterval,colors)
+            meanValue = mean([startInterval,endInterval]);
+            colors(nodeIndex) = meanValue;
+            childOfNodes = find(obj.dependencyMatrix(nodeIndex,:));
+            
+            segments = linspace(startInterval,endInterval,length(childOfNodes)+1) ;
+            for i=1: length(childOfNodes)
+               childNodeIndex = childOfNodes(i);
+               colors =  obj.recursiveColor(childNodeIndex, segments(i),segments(i+1),colors);
+            end
+        end
+        function regionColors = getColorByRegionName(obj, regionNames)
+            colors = obj.createColors();
+            [~,indexInOntlogy] = ismember(regionNames, obj.structureLabels(:,4));
+            regionColors = colors(indexInOntlogy,:); 
+        end
         function childOfNodes = getIndexesOfChilds(obj,parentNodeIndexes)
             [allChilds, ~] = obj.allChildNodes();
             childOfNodes = allChilds(parentNodeIndexes, :);

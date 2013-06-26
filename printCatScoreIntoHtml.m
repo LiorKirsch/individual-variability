@@ -1,4 +1,4 @@
-function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, numOfgenesInCatAndRegion, title, htmlFileName )
+function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, go_gene_mat, geneNames, numOfgenesInCatAndRegion, title, htmlFileName ,normalizedMeanGeneScore)
 
     brainRelated = load('/home/lab/noalis/work3/for_uri_feb_2012/new/old_data/images_go_genes_mat_brain_screened', 'go_cat_names', 'cat_ids');
     
@@ -13,7 +13,8 @@ function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, numOfgene
 
     fid = fopen(fullfile('www',htmlFileName), 'w');
     fprintf('writing output to file %s\n', htmlFileName);
-    fprintf(fid,'<html><head><title>%s</title></head><body><table>\n', title);
+    collapseScript = '<script type="text/javascript" src="CollapsibleLists.js"></script>';
+    fprintf(fid,'<html><head><title>%s</title>%s</head><body><table>\n', title, collapseScript);
     
     fprintf(fid,'<tr>');
     for i = 1:length(regionLabel)
@@ -36,12 +37,30 @@ function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, numOfgene
                 style = [style ,'visibility:hidden;'];
             end
             
-            fprintf(fid,'<td style="%s"> <small>%d</small> <a href=%s>%s</a> (%d) </td>', style, scores(i,j),link, catLabels{j}{i}, numOfgenesInCatAndRegion(i,j) );
+            go_to_gene = logical(go_gene_mat{j});
+            genesInCategory = go_to_gene(i,:);
+            geneListHtml = createGeneString(geneNames, genesInCategory, normalizedMeanGeneScore(:,j));
+
+            fprintf(fid,'<td style="%s"> <ul class="collapsibleList">  <li> <small>%d</small> <a href=%s>%s</a> (%d) %s </li>  </ul></td>', style, scores(i,j),link, catLabels{j}{i}, numOfgenesInCatAndRegion(i,j) ,geneListHtml);
         end
         fprintf(fid,'</tr>\n');
         printPercentCounter(j, size(scores,1));
     end
     
-    %fprintf(fid, '</table></body></html>');
+    fprintf(fid,'</table>\n<script type="text/javascript">     CollapsibleLists.apply();   </script>');
+    fprintf(fid, '</body></html>');
     fclose(fid);
+end
+
+function geneListHtml = createGeneString(geneNames, genesInCategory, normalizedMeanGeneScore)
+            
+            genesInCat = geneNames( genesInCategory );
+            geneScores = normalizedMeanGeneScore( genesInCategory );
+            [sortedScores, sortInd] = sort(geneScores);
+            genesInCat = genesInCat(sortInd);
+            geneListHtml = '';
+            for m = 1:length(genesInCat)
+                geneListHtml = sprintf('%s <li> %g <a href="http://www.genecards.org/cgi-bin/carddisp.pl?gene=%s">%s </a> </li> ', geneListHtml, sortedScores(m), genesInCat{m}, genesInCat{m});
+            end
+            geneListHtml = sprintf('<ul> %s </ul>' ,geneListHtml);
 end
