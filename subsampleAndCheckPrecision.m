@@ -67,16 +67,10 @@ function subsampleAndCheckPrecision(sizesOfClasses, fileName)
     percentInCategory = nan(numberOfRepetitions,numberOfCategories, numberOfRegions,length(sizesOfClasses) );
     percentInCategoryUsingGenes = nan(numberOfRepetitions,numberOfCategories, numberOfRegions,length(sizesOfClasses) );
     
-    %size(distanceBetweenGroups)
     for i = 1:length(sizesOfClasses)
-        
         sizeOfClass = sizesOfClasses(i);
-
         [percentInCategory(:,:,:,i) , percentInCategoryUsingGenes(:,:,:,i)] = getClusteringScoresOfArandomSet(numberOfRepetitions, sizeOfClass, distanceBetweenGroups, experimentsDataMatrix, experimentsSubjectMatrix);
-%         toc;
-       % fprintf('     ');
         printPercentCounter(i, length(sizesOfClasses));
-       % fprintf('\n');
     end
     
     save(fileName,'percentInCategory','percentInCategoryUsingGenes','sizesOfClasses','experimentsDataMatrix', 'experimentsSubjectMatrix','experimentRegion','cat_ids', 'aspects','go_gene_mat','geneNames','selectedProbesData');

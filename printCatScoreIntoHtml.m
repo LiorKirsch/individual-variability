@@ -1,4 +1,4 @@
-function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, go_gene_mat, geneNames, numOfgenesInCatAndRegion, title, htmlFileName ,normalizedMeanGeneScore)
+function printCatScoreIntoHtml(regionLabel, scores, scoresSeperate, catIds, catLabels, go_gene_mat, geneNames, numOfgenesInCatAndRegion, title, htmlFileName ,normalizedMeanGeneScore)
 
     brainRelated = load('/home/lab/noalis/work3/for_uri_feb_2012/new/old_data/images_go_genes_mat_brain_screened', 'go_cat_names', 'cat_ids');
     
@@ -40,8 +40,8 @@ function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, go_gene_m
             go_to_gene = logical(go_gene_mat{j});
             genesInCategory = go_to_gene(i,:);
             geneListHtml = createGeneString(geneNames, genesInCategory, normalizedMeanGeneScore(:,j));
-
-            fprintf(fid,'<td style="%s"> <ul class="collapsibleList">  <li> <small>%d</small> <a href=%s>%s</a> (%d) %s </li>  </ul></td>', style, scores(i,j),link, catLabels{j}{i}, numOfgenesInCatAndRegion(i,j) ,geneListHtml);
+            scoresIndHtml = createScoresSeperate( scoresSeperate(i,:,j) );
+            fprintf(fid,'<td style="%s"> <ul class="collapsibleList">  <li> <small>%d</small> %s <a href=%s>%s</a> (%d) %s </li>  </ul></td>', style, scores(i,j),scoresIndHtml, link, catLabels{j}{i}, numOfgenesInCatAndRegion(i,j) ,geneListHtml);
         end
         fprintf(fid,'</tr>\n');
         printPercentCounter(j, size(scores,1));
@@ -51,6 +51,16 @@ function printCatScoreIntoHtml(regionLabel, scores, catIds, catLabels, go_gene_m
     fprintf(fid, '</body></html>');
     fclose(fid);
 end
+
+function scoresListHtml = createScoresSeperate(scoresSeperate)
+            
+            scoresListHtml = '';
+            for m = 1:length(scoresSeperate)
+                scoresListHtml = sprintf('%s <li>%g</li>', scoresListHtml, scoresSeperate(m) );
+            end
+            scoresListHtml = sprintf('<small> <ol>%s</ol> </small>' ,scoresListHtml);
+end
+
 
 function geneListHtml = createGeneString(geneNames, genesInCategory, normalizedMeanGeneScore)
             

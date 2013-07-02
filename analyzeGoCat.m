@@ -6,10 +6,11 @@ function analyzeGoCat()
     houseKeeping = load('catHouseKeepingScores.mat', 'catDistanceScore', 'onlyCatDistanceScore','cat_ids','numOfGenesInCategory','go_gene_mat');
     singleGeneScores = load('singleGeneScores.mat', 'singleGeneDistanceScore', 'onlySingleGeneDistanceScore','geneNames');
     
-    subsetConf.onlyBrain = false;
+    subsetConf.onlyBrain = true;
     subsetConf.minCatSize = 50;
     subsetConf.maxCatSize = 300 ;
     subsetConf.catBranch = 'P';
+    seperateSubject = true;
     withOutGenes = true;
     
     [cat_ids, aspects, go_gene_mat, numOfGenesInCategory, catDistanceScore, onlyCatDistanceScore] = chooseSubsetOfCategories(subsetConf, cat_ids, aspects, go_gene_mat, numOfGenesInCategory, catDistanceScore, onlyCatDistanceScore);
@@ -33,11 +34,28 @@ function analyzeGoCat()
     end
     
     
-    
-    
+   correctedNormalScoresAboveSeperate = nan(size(catDistanceScore) );
+   correctedNormalScoresBelowSeperate  = nan(size(catDistanceScore) );
+   numberOfPeople = size(catDistanceScore,2);
+   for j=1:numberOfPeople
+       currentRandCatScores = squeeze( percentInCategory(:,j,:,:) );
+       currentCatScores = squeeze( catDistanceScore(:,j,:) );
+
+       [sigScoresAbove, sigScoresBelow] = getSignificeNormalScores(numOfGenesInCategory, currentCatScores,currentRandCatScores,full(sizesOfClasses),regionNames);
+       %[sigScoresAbove, sigScoresBelow] = getSignificeNormalScores(numOfGenesInCategory, currentCatScores,meanRandCatScores,full(sizesOfClasses),regionNames);
+        correctedNormalScoresAboveSeperate(:,j,:) = decideSignificance(sigScoresAbove);
+        correctedNormalScoresBelowSeperate(:,j,:) = decideSignificance(sigScoresBelow);    
+%        correctedNormalScoresAboveSeperate(:,j,:) = sigScoresAbove;
+%        correctedNormalScoresBelowSeperate(:,j,:) = sigScoresBelow;    
+
+   end
+
    [sigScoresAbove, sigScoresBelow] = getSignificeNormalScores(numOfGenesInCategory, meanCatScores,meanRandCatScores,full(sizesOfClasses),regionNames);
    correctedNormalScoresAbove = decideSignificance(sigScoresAbove);
-   correctedNormalScoresBelow = decideSignificance(sigScoresBelow);
+   correctedNormalScoresBelow = decideSignificance(sigScoresBelow);    
+
+    
+   
 %    sigScores = getSignificeScores(numOfGenesInCategory, meanCatScores,meanRandCatScores,full(sizesOfClasses),regionNames);
     
 
@@ -45,16 +63,21 @@ function analyzeGoCat()
     subSetNames =regionNames;
     
     for i =1:length(subSetNames)
-       subsestResultsAbove{i} =  correctedNormalScoresAbove(:, strcmp(regionNames,subSetNames{i}) );
-       subsestResultsBelow{i} =  correctedNormalScoresBelow(:, strcmp(regionNames,subSetNames{i}) );
+       
+        subsestResultsAboveSeperate{i} =  correctedNormalScoresAboveSeperate(:, :,strcmp(regionNames,subSetNames{i}) );
+        subsestResultsBelowSeperate{i} =  correctedNormalScoresBelowSeperate(:, :,strcmp(regionNames,subSetNames{i}) );
+
+        subsestResultsAbove{i} =  correctedNormalScoresAbove(:, strcmp(regionNames,subSetNames{i}) );
+        subsestResultsBelow{i} =  correctedNormalScoresBelow(:, strcmp(regionNames,subSetNames{i}) );
+
     end
    
     if subsetConf.onlyBrain
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subSetNames, go_gene_mat, geneNames,'variBrainAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory,normalizedMeanGeneScore);
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subSetNames, go_gene_mat, geneNames,'variBrainBelowMean.html','without cat variability is reduced', numOfGenesInCategory,normalizedMeanGeneScoreBelow);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subsestResultsAboveSeperate,subSetNames, go_gene_mat, geneNames,'variBrainAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory,normalizedMeanGeneScore);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subsestResultsBelowSeperate, subSetNames, go_gene_mat, geneNames,'variBrainBelowMean.html','without cat variability is reduced', numOfGenesInCategory,normalizedMeanGeneScoreBelow);
     else
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subSetNames, go_gene_mat, geneNames,'variAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory,normalizedMeanGeneScore);
-        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subSetNames, go_gene_mat, geneNames,'variBelowMean.html','without cat variability is reduced', numOfGenesInCategory,normalizedMeanGeneScoreBelow);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsAbove, subsestResultsAboveSeperate, subSetNames, go_gene_mat, geneNames,'variAboveMean.html','without cat variability among subjects is stronger',numOfGenesInCategory,normalizedMeanGeneScore);
+        analyzeCatWithScores(cat_ids, aspects, subsestResultsBelow, subsestResultsBelowSeperate, subSetNames, go_gene_mat, geneNames,'variBelowMean.html','without cat variability is reduced', numOfGenesInCategory,normalizedMeanGeneScoreBelow);
     end
    
 % % % %     plotScoresAndCatSize(numOfGenesInCategory, meanCatScores,meanRandCatScores,sizesOfClasses,regionNames);
