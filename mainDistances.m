@@ -123,7 +123,7 @@ function scatterDistances(expressionDistances, distances, experimentsSubjectMatr
 %         
 %     end
     
-    [spearmanCorr, pval] = corr(expressionDistances(:),distances(:),'type','Spearman');
-    fprintf('%s \t %g (pval %g)\n', label, spearmanCorr, pval);
+    spearmanCorr = corr(expressionDistances(:),distances(:),'type','Spearman');
+    fprintf('%s \t %g \n', label, spearmanCorr);
 end
     

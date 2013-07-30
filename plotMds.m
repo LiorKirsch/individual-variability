@@ -1,15 +1,17 @@
 function mdsEmbeding = plotMds(experimentsDataMatrix,experimentRegion, experimentsSubjectMatrix, regionNames,regionColors)
 
-    expressionDistances = distanceUsingMatrices(experimentsDataMatrix);
+
 %     all(all(expressionDistances == expressionDistances'))
 %     all(all(expressionDistances >= 0 ))
 %     diagIndices = 1:size(expressionDistances,1)+1:numel(expressionDistances); 
 %     all(expressionDistances(diagIndices) == 0 )
     
-    pdistExpressionDistance = pdist(experimentsDataMatrix,'euclidean');
-    expressionDistances2 = squareform(pdistExpressionDistance);
-    expressionDistances2 = expressionDistances2.^2;
-    all(expressionDistances2(:) == expressionDistances(:))
+    pdistExpressionDistance = pdistAlternative(experimentsDataMatrix);
+%     expressionDistances = distanceUsingMatrices(experimentsDataMatrix);
+%     pdistExpressionDistance = pdist(experimentsDataMatrix,'euclidean');
+%     expressionDistances2 = squareform(pdistExpressionDistance);
+%     expressionDistances2 = expressionDistances2.^2;
+%     all(expressionDistances2(:) == expressionDistances(:))
     
 %     [cmdsEmbeding,eigvals] = cmdscale(pdistExpressionDistance);
     [mdsEmbeding,stress] = mdscale(pdistExpressionDistance,2,'criterion','metricstress');
@@ -54,7 +56,7 @@ function scatterRegionColor(score, experimentCategory, experimentColors,category
 %     experimentCategoryIndex = experimentCategory *  (1:numberOfCategories)';
 % %     experimentCategoryLabel = categoryNames(experimentCategoryIndex,:);
 %     experimentCategoryColor = categoryColors(experimentCategoryIndex,:);
-    markerType = {'o' ,'^','v','x','s','d', '>','+','p' ,'h','s' ,'<','x','o','d'};
+    markerType = {'o' ,'^','v','x','s','d', '>','+','p' ,'h','s' ,'<','x','o','d','s' ,'<','x','o','d'};
 
     
     for j=1: numberOfCategories
@@ -91,4 +93,12 @@ end
 function squaredDistances = distanceUsingMatrices(x)
     Qx=repmat(dot(x,x,2),1,size(x,1));
     squaredDistances = (Qx+Qx'-2*(x*x'));
+end
+
+function distances = pdistAlternative(x)
+    Qx=repmat(dot(x,x,2),1,size(x,1));
+    distances = Qx+Qx'-2*(x*x');
+
+    distances( logical(eye(size(distances)) )) = 0;
+    distances = sqrt(distances);
 end
