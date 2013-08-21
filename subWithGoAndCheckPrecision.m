@@ -8,6 +8,8 @@ function subWithGoAndCheckPrecision()
     %load('expressionRawDataWithOntology.mat', 'selectedProbesData');
     
     load('pcaData.mat','experimentsSubjectMatrix', 'experimentsDataMatrix', 'experimentRegion','regionNames','selectedProbesData');
+    load('humanOntologyObject.mat');
+
 %     randomSizePrecision =  load('randomSizePrecision.mat','percentInCategory','sizesOfClasses');
 %     
 %     [meanPerPerson, stdPerPerson] = calcNormalForEachPerson(randomSizePrecision.percentInCategory);
@@ -25,7 +27,8 @@ function subWithGoAndCheckPrecision()
     % mean and std over people
     regionScores = mean(categoriesScores,2);
     regionStdScores = std(categoriesScores,1,2);
-    regionColors = createColorMap(length(regionNames));
+%     regionColors = createColorMap(length(regionNames));
+    regionColors = humanOntology.getColorByRegionName(regionNames);
     figure(1234123);
     drawBars(regionScores,regionStdScores,regionNames,regionColors,'between / within');
 
@@ -69,7 +72,10 @@ function subWithGoAndCheckPrecision()
         % mean and std over people
     regionScores = mean(categoriesScores,2);
     regionStdScores = std(categoriesScores,1,2);
-    regionColors = createColorMap(length(regionNames));
+
+%     regionColors = createColorMap(length(regionNames));
+    regionColors = humanOntology.getColorByRegionName(regionNames);
+
     figure(12234123);
     drawBars(regionScores,regionStdScores,regionNames,regionColors,'between / within');
 

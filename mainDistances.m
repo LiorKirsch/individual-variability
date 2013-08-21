@@ -105,9 +105,8 @@ function distances = pdistAlternative(x)
 end
 
 function scatterDistances(expressionDistances, distances, experimentsSubjectMatrixLogical, label)
-    numberOfSubjects = size(experimentsSubjectMatrixLogical,2);
-    randI = randi(10000);
-    
+%    numberOfSubjects = size(experimentsSubjectMatrixLogical,2);
+%    randI = randi(10000);
 %     for i = 1:numberOfSubjects
 %         releventExp = experimentsSubjectMatrixLogical(:,i);
 %         releventExpressionDistances = expressionDistances(releventExp,releventExp);

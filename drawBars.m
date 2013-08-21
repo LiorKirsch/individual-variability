@@ -1,4 +1,5 @@
 function drawBars(values,std,labels,colors,yAxisLabel)
+% draw bars with a differnt color and label for each bar
 
     hold on;
     for i=1:length(values)
