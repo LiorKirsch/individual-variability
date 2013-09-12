@@ -13,7 +13,7 @@ function mainAgeVaiability()
     aboveTreshold = (experimentsInRegion > regionSampleTreshold);
     experimentRegion = experimentRegion(:,aboveTreshold);
     regionNames = regionNames(aboveTreshold);
-    regionColors = regionColors(aboveTreshold,:);
+    regionColors = humanOntology.getColorByRegionName(regionNames);
     experimentsInRegion = experimentsInRegion(aboveTreshold);
 
     numberOfPeople = size(experimentsSubjectMatrixLogical,2);
@@ -79,20 +79,22 @@ function mainAgeVaiability()
         printPercentCounter(i, numberOfEra );
     end
 
-    drawVariability(eraDistanceScoreAllSamples , onlyEraDistanceScoreAllSamples, 'whole brain','gene era');
+%     drawVariability(eraDistanceScoreAllSamples , onlyEraDistanceScoreAllSamples, 'whole brain','gene era');
 
     for m = 1:numberOfRegions
-       figure(m);
+%        figure(m);
        areaRandomScores = squeeze(randomScoresMeanPeople(:,m ,:));
        areaRandomScores = areaRandomScores';
        areaRandomScoresWithout = squeeze(randomScoresMeanPeopleWithoutGenes(:,m ,:));
        areaRandomScoresWithout = areaRandomScoresWithout';
        
-       currentTitle = sprintf('%s (%d genes)',regionNames{m}, experimentsInRegion(m));
+       currentTitle = sprintf('%s (%d samples)',regionNames{m}, experimentsInRegion(m));
        %drawVariability(eraDistanceScore(:,:,m) , onlyEraDistanceScore(:,:,m), '','gene era');
-       drawVariability(areaRandomScoresWithout , areaRandomScores, '','gene era');
+%        drawVariability(areaRandomScoresWithout , areaRandomScores, '','gene era');
        hold on;
-       plot( mean(onlyEraDistanceScore(:,:,m),2) );
+       % p = plot( mean(onlyEraDistanceScore(:,:,m),2) - mean(mean(onlyEraDistanceScore(:,:,m),2)) );
+       p = plot( mean(onlyEraDistanceScore(:,:,m),2) );
+       set(p,'Color',regionColors(m,:),'LineWidth',2);
        annotation('textbox', [0 0.9 1 0.1], 'String', currentTitle, 'EdgeColor', 'none', 'HorizontalAlignment', 'center','fontsize',20);
     end
     
@@ -116,7 +118,8 @@ function drawVariability(eraDistanceScore , onlyEraDistanceScore, regionName,xti
 %         subplot(1,2,2);
 %         plot( squeeze(mean(onlyEraDistanceScore,2)) );
 %         errorbar(squeeze(mean(onlyEraDistanceScore,2)), squeeze(std(onlyEraDistanceScore,1,2)) ,'.');
-        plotp(onlyEraDistanceScore');
+        plotpWilcoxon(onlyEraDistanceScore');
+%         plotp(onlyEraDistanceScore');
         title(sprintf('%s scores using only the  genes', regionName),'fontsize',16);
         xlabel(xtitle,'fontsize',20);
         ylabel('variability score (between/within)','fontsize',20);

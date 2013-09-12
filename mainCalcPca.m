@@ -1,22 +1,24 @@
 function mainCalcPca()
 
 
-load('easyFormatHumanData.mat');
-load('humanOntologyObject.mat');
-load('subset.mat');
-
-[aboveK ,numOfSamples] = checkForMoreThenKSamples(experimentsLocationMatrix, experimentsSubjectMatrixLogical, humanOntology,5);
-subsetNodesIndex = subsetNodesIndex & aboveK;
-%subsetNodesIndex = true(size(aboveK));
-regionColors = humanOntology.structureColors(subsetNodesIndex,:);
-regionNames = humanOntology.structureLabels(subsetNodesIndex,4);
-
-[experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, experimentRegion, mni_xyz, mri_voxel_xyz] = calcPCAinStructures(experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrixLogical,humanOntology,subsetNodesIndex, mni_xyz, mri_voxel_xyz);
+% load('easyFormatHumanData.mat');
+% load('humanOntologyObject.mat');
+% load('subset.mat');
+% 
+% [aboveK ,numOfSamples] = checkForMoreThenKSamples(experimentsLocationMatrix, experimentsSubjectMatrixLogical, humanOntology,5);
+% subsetNodesIndex = subsetNodesIndex & aboveK;
+% %subsetNodesIndex = true(size(aboveK));
+% regionColors = humanOntology.structureColors(subsetNodesIndex,:);
+% regionNames = humanOntology.structureLabels(subsetNodesIndex,4);
+% 
+% [experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrix, experimentRegion, mni_xyz, mri_voxel_xyz] = groupByRegions(experimentsDataMatrix, experimentsLocationMatrix, experimentsSubjectMatrixLogical,humanOntology,subsetNodesIndex, mni_xyz, mri_voxel_xyz);
 % [coeff,score,latent] = pca(experimentsDataMatrix);
 % save('pcaData.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'selectedProbesData', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
 % %save('pcaDataAllRegions.mat','experimentsDataMatrix', 'experimentsLocationMatrix', 'experimentsSubjectMatrix', 'selectedProbesData', 'experimentRegion', 'coeff','score', 'latent','regionNames','regionColors','mni_xyz', 'mri_voxel_xyz');
+%%
+%load('pcaData.mat');
+load('pcaSparseData.mat');
 
-load('pcaData.mat');
 load('humanOntologyObject.mat');
 %load('pcaDataAllRegions.mat');
 numOfSubjects = size(experimentsSubjectMatrix,2);
@@ -48,7 +50,7 @@ function clacPCAforEachAreaSeperately(experimentsDataMatrix, experimentRegion, e
     end
 end
 
-function [experimentsDataMatrix, locationMatrix, experimentsSubjectMatrixLogical, experimentRegion, mni_xyz, mri_voxel_xyz]= calcPCAinStructures(experimentsDataMatrix, locationMatrix, experimentsSubjectMatrixLogical,ontologyObject, subsetNodesIndex, mni_xyz, mri_voxel_xyz)
+function [experimentsDataMatrix, locationMatrix, experimentsSubjectMatrixLogical, experimentRegion, mni_xyz, mri_voxel_xyz]= groupByRegions(experimentsDataMatrix, locationMatrix, experimentsSubjectMatrixLogical,ontologyObject, subsetNodesIndex, mni_xyz, mri_voxel_xyz)
 
     assert(size(experimentsDataMatrix,1) == size(locationMatrix,1));
     assert(size(locationMatrix,2) == size(ontologyObject.dependencyMatrix,1) );
